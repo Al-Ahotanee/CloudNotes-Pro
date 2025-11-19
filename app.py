@@ -243,6 +243,9 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     """Main page"""
+    # Initialize database on first request
+    if not os.path.exists(app.config['DATABASE']):
+        init_db()
     return render_template('index.html')
 
 # ============================================================================
@@ -253,6 +256,10 @@ def index():
 def login():
     """User login"""
     try:
+        # Ensure database exists
+        if not os.path.exists(app.config['DATABASE']):
+            init_db()
+            
         data = request.get_json()
         username = data.get('username', '').strip()
         password = data.get('password', '')
@@ -262,7 +269,17 @@ def login():
 
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        
+        try:
+            cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        except sqlite3.OperationalError:
+            # Table doesn't exist, create it
+            conn.close()
+            init_db()
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+            
         user = cursor.fetchone()
         conn.close()
 
@@ -291,6 +308,10 @@ def login():
 def register():
     """User registration"""
     try:
+        # Ensure database exists
+        if not os.path.exists(app.config['DATABASE']):
+            init_db()
+            
         data = request.get_json()
         username = data.get('username', '').strip()
         password = data.get('password', '')
@@ -313,18 +334,27 @@ def register():
                 INSERT INTO users (username, password, email, role)
                 VALUES (?, ?, ?, 'student')
             """, (username, generate_password_hash(password), email))
-            conn.commit()
+        except sqlite3.OperationalError:
+            # Table doesn't exist, create it
             conn.close()
+            init_db()
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users (username, password, email, role)
+                VALUES (?, ?, ?, 'student')
+            """, (username, generate_password_hash(password), email))
+            
+        conn.commit()
+        conn.close()
 
-            return jsonify({
-                'success': True,
-                'message': 'Registration successful! Please login.'
-            })
+        return jsonify({
+            'success': True,
+            'message': 'Registration successful! Please login.'
+        })
 
-        except sqlite3.IntegrityError:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Username already exists'}), 400
-
+    except sqlite3.IntegrityError:
+        return jsonify({'success': False, 'error': 'Username already exists'}), 400
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -705,20 +735,24 @@ def initialize_app():
         # Ensure upload directory exists
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         
-        # Initialize database
+        # Force initialize database
         init_db()
         
-        print("=" * 60)
-        print("✅ CloudNotes Pro - Application Started Successfully")
-        print("=" * 60)
-        print(f"📁 Upload folder: {app.config['UPLOAD_FOLDER']}")
-        print(f"💾 Database: {app.config['DATABASE']}")
-        print(f"🔐 Secret key configured: {'Yes' if app.config['SECRET_KEY'] else 'No'}")
-        print("=" * 60)
+        print("✅ CloudNotes Pro - Ready")
         
     except Exception as e:
-        print(f"❌ Application initialization failed: {str(e)}")
-        raise
+        print(f"❌ Init failed: {str(e)}")
+
+# Call init before any request
+@app.before_request
+def ensure_database():
+    """Ensure database exists before each request"""
+    if not hasattr(app, '_db_initialized'):
+        try:
+            init_db()
+            app._db_initialized = True
+        except:
+            pass
 
 if __name__ == '__main__':
     initialize_app()
