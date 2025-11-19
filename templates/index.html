@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudNotes Pro - Academic Notes Sharing Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .note-card {
+            transition: all 0.3s ease;
+        }
+        .note-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Loading Spinner -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 flex flex-col items-center">
+            <div class="spinner"></div>
+            <p class="mt-4 text-gray-700 font-semibold">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed top-4 right-4 z-50 max-w-md"></div>
+
+    <!-- Main Container -->
+    <div class="min-h-screen">
+        
+        <!-- Header -->
+        <header class="gradient-bg text-white py-12 px-4 sm:px-6 lg:px-8 shadow-2xl">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center">
+                    <h1 class="text-5xl md:text-6xl font-extrabold mb-4 tracking-tight">
+                        ☁️ CloudNotes Pro
+                    </h1>
+                    <p class="text-xl md:text-2xl mb-6 opacity-95">
+                        Advanced Cloud-Powered Academic Notes Sharing Platform
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-6 text-sm md:text-base opacity-90">
+                        <span>🔐 Secure Authentication</span>
+                        <span>💾 Real File Storage</span>
+                        <span>🔍 Advanced Search</span>
+                        <span>⭐ Rating System</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Auth Section -->
+        <div id="authSection" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid md:grid-cols-2 gap-8">
+                
+                <!-- Welcome Column -->
+                <div class="flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-8xl mb-6">📚</div>
+                        <h2 class="text-3xl font-bold text-purple-600 mb-4">Welcome to CloudNotes</h2>
+                        <p class="text-gray-600 text-lg">Share knowledge, build community</p>
+                    </div>
+                </div>
+
+                <!-- Auth Forms Column -->
+                <div class="glass-effect rounded-3xl shadow-2xl p-8">
+                    
+                    <!-- Tabs -->
+                    <div class="flex gap-2 mb-8 bg-gray-100 p-1 rounded-xl">
+                        <button onclick="switchAuthTab('login')" class="tab-btn active flex-1 py-3 px-6 rounded-lg font-semibold transition-all">
+                            🔐 Login
+                        </button>
+                        <button onclick="switchAuthTab('register')" class="tab-btn flex-1 py-3 px-6 rounded-lg font-semibold transition-all">
+                            📝 Register
+                        </button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="loginForm" class="space-y-6">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Sign in to your account</h3>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                            <input type="text" id="loginUsername" required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                   placeholder="Enter your username">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                            <input type="password" id="loginPassword" required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                   placeholder="Enter your password">
+                        </div>
+
+                        <button type="submit" class="w-full gradient-bg text-white py-3 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                            🚀 Login
+                        </button>
+
+                        <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-lg mt-6">
+                            <p class="font-semibold text-gray-800 mb-2">📝 Demo Accounts:</p>
+                            <ul class="text-sm text-gray-700 space-y-1">
+                                <li>👨‍💼 Admin: <code class="bg-white px-2 py-1 rounded">admin</code> / <code class="bg-white px-2 py-1 rounded">admin123</code></li>
+                                <li>🎓 Student: <code class="bg-white px-2 py-1 rounded">student1</code> / <code class="bg-white px-2 py-1 rounded">pass123</code></li>
+                                <li>👨‍🏫 Professor: <code class="bg-white px-2 py-1 rounded">professor</code> / <code class="bg-white px-2 py-1 rounded">prof123</code></li>
+                            </ul>
+                        </div>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="registerForm" class="hidden space-y-6">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Create a new account</h3>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                            <input type="text" id="regUsername" required minlength="3"
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                   placeholder="Choose a username (min 3 chars)">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                            <input type="email" id="regEmail" required
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                   placeholder="your.email@university.edu">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                            <input type="password" id="regPassword" required minlength="6"
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                   placeholder="Choose a password (min 6 chars)">
+                        </div>
+
+                        <button type="submit" class="w-full gradient-bg text-white py-3 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                            ✨ Create Account
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App (Hidden Initially) -->
+        <div id="mainApp" class="hidden">
+            
+            <!-- User Bar -->
+            <div class="bg-white shadow-md py-4 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-7xl mx-auto flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">👤</span>
+                        <div>
+                            <p class="font-semibold text-gray-800" id="currentUsername"></p>
+                            <p class="text-sm text-gray-500" id="currentRole"></p>
+                        </div>
+                    </div>
+                    <button onclick="handleLogout()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-semibold transition-all transform hover:scale-105">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                
+                <!-- Tabs Navigation -->
+                <div class="bg-white rounded-2xl shadow-lg p-2 mb-8">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="switchTab('browse')" data-tab="browse" class="main-tab-btn active flex-1 min-w-[150px] py-3 px-6 rounded-xl font-semibold transition-all">
+                            🔍 Browse Notes
+                        </button>
+                        <button onclick="switchTab('upload')" data-tab="upload" class="main-tab-btn flex-1 min-w-[150px] py-3 px-6 rounded-xl font-semibold transition-all">
+                            📤 Upload
+                        </button>
+                        <button onclick="switchTab('rate')" data-tab="rate" class="main-tab-btn flex-1 min-w-[150px] py-3 px-6 rounded-xl font-semibold transition-all">
+                            ⭐ Rate Notes
+                        </button>
+                        <button onclick="switchTab('profile')" data-tab="profile" class="main-tab-btn flex-1 min-w-[150px] py-3 px-6 rounded-xl font-semibold transition-all">
+                            👤 Profile
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Contents -->
+                <div id="tabContents">
+                    
+                    <!-- Browse Tab -->
+                    <div id="browseTab" class="tab-content">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-6">📚 Discover Study Materials</h3>
+                            
+                            <div class="grid md:grid-cols-12 gap-4 mb-6">
+                                <div class="md:col-span-5">
+                                    <input type="text" id="searchQuery"
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                           placeholder="🔍 Search by title, subject, tags...">
+                                </div>
+                                <div class="md:col-span-3">
+                                    <select id="categoryFilter"
+                                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                                        <option value="All">All Categories</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <select id="sortBy"
+                                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                                        <option value="recent">Most Recent</option>
+                                        <option value="popular">Most Popular</option>
+                                        <option value="rating">Highest Rated</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <button onclick="searchNotes()" class="w-full gradient-bg text-white py-3 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all">
+                                        Search
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div id="searchResults" class="space-y-6"></div>
+                    </div>
+
+                    <!-- Upload Tab -->
+                    <div id="uploadTab" class="tab-content hidden">
+                        <div class="bg-white rounded-2xl shadow-lg p-8">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-6">📝 Share Your Study Materials</h3>
+                            
+                            <form id="uploadForm" class="space-y-6">
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Note Title *</label>
+                                        <input type="text" id="uploadTitle" required
+                                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                               placeholder="e.g., Linear Algebra - Eigenvalues">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Category *</label>
+                                        <select id="uploadCategory" required
+                                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                                            <option value="">Select Category</option>
+                                            <option value="Computer Science">Computer Science</option>
+                                            <option value="Mathematics">Mathematics</option>
+                                            <option value="Physics">Physics</option>
+                                            <option value="Chemistry">Chemistry</option>
+                                            <option value="Biology">Biology</option>
+                                            <option value="Engineering">Engineering</option>
+                                            <option value="Literature">Literature</option>
+                                            <option value="History">History</option>
+                                            <option value="Economics">Economics</option>
+                                            <option value="Business">Business</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Subject *</label>
+                                        <input type="text" id="uploadSubject" required
+                                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                               placeholder="e.g., Linear Algebra">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tags (comma-separated)</label>
+                                        <input type="text" id="uploadTags"
+                                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                               placeholder="e.g., algebra, matrices, eigenvalues">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                                    <textarea id="uploadDescription" rows="4"
+                                              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                              placeholder="Provide a detailed description..."></textarea>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">📎 Upload File *</label>
+                                    <input type="file" id="uploadFile" required
+                                           accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.zip"
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all">
+                                    <p class="text-sm text-gray-500 mt-2">Supported formats: PDF, DOC, DOCX, TXT, PPT, PPTX, ZIP (Max 50MB)</p>
+                                </div>
+
+                                <button type="submit" class="w-full gradient-bg text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                                    📤 Upload Note
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Rate Tab -->
+                    <div id="rateTab" class="tab-content hidden">
+                        <div class="bg-white rounded-2xl shadow-lg p-8">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-4">📊 Rate Notes</h3>
+                            
+                            <div class="bg-orange-50 border-l-4 border-orange-500 p-6 rounded-lg mb-8">
+                                <p class="font-semibold text-orange-900 mb-2">⭐ Help the Community</p>
+                                <p class="text-orange-800">Your ratings help other students find quality study materials. Rate notes you've downloaded!</p>
+                            </div>
+
+                            <form id="ratingForm" class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Note ID *</label>
+                                    <input type="number" id="rateNoteId" required
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                           placeholder="Enter note ID">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Rating (1-5 stars) *</label>
+                                    <div class="flex gap-4 items-center">
+                                        <input type="range" id="ratingSlider" min="1" max="5" value="3" required
+                                               class="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                        <span id="ratingValue" class="text-4xl font-bold text-purple-600 min-w-[60px] text-center">3</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm text-gray-500 mt-2">
+                                        <span>1 = Poor</span>
+                                        <span>3 = Good</span>
+                                        <span>5 = Excellent</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Review (Optional)</label>
+                                    <textarea id="reviewText" rows="4"
+                                              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all"
+                                              placeholder="Share your thoughts..."></textarea>
+                                </div>
+
+                                <button type="submit" class="w-full gradient-bg text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                                    ⭐ Submit Rating
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Profile Tab -->
+                    <div id="profileTab" class="tab-content hidden">
+                        <div id="profileContent"></div>
+
+                        <div class="bg-white rounded-2xl shadow-lg p-8 mt-8">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-6">🗑️ Delete Your Notes</h3>
+                            
+                            <form id="deleteForm" class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Note ID to Delete</label>
+                                    <input type="number" id="deleteNoteId"
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none transition-all"
+                                           placeholder="Enter note ID">
+                                </div>
+
+                                <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all">
+                                    🗑️ Delete Note
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ====================================================================
+        // STATE MANAGEMENT
+        // ====================================================================
+        
+        let currentUser = null;
+        let allNotes = [];
+        let categories = ['All'];
+
+        // ====================================================================
+        // UTILITY FUNCTIONS
+        // ====================================================================
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const bgColor = type === 'success' ? 'bg-green-500' : 
+                           type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            
+            toast.innerHTML = `
+                <div class="${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl fade-in">
+                    <p class="font-semibold">${message}</p>
+                </div>
+            `;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 4000);
+        }
+
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                    },
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = bytes;
+            let unitIndex = 0;
+            
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            
+            return `${size.toFixed(1)} ${units[unitIndex]}`;
+        }
+
+        // ====================================================================
+        // AUTHENTICATION
+        // ====================================================================
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const tabBtns = document.querySelectorAll('.tab-btn');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                tabBtns[0].classList.add('active');
+                tabBtns[1].classList.remove('active');
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                tabBtns[0].classList.remove('active');
+                tabBtns[1].classList.add('active');
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            try {
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+
+                const data = await apiCall('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                currentUser = data.user;
+                document.getElementById('currentUsername').textContent = data.user.username;
+                document.getElementById('currentRole').textContent = `Role: ${data.user.role}`;
+                
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                showToast(data.message, 'success');
+                await loadCategories();
+                await searchNotes();
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            try {
+                const username = document.getElementById('regUsername').value;
+                const password = document.getElementById('regPassword').value;
+                const email = document.getElementById('regEmail').value;
+
+                const data = await apiCall('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, email })
+                });
+
+                showToast(data.message, 'success');
+                switchAuthTab('login');
+                
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regEmail').value = '';
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        async function handleLogout() {
+            showLoading();
+            try {
+                await apiCall('/api/auth/logout', { method: 'POST' });
+                currentUser = null;
+                
+                document.getElementById('authSection').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+                
+                showToast('Logged out successfully', 'success');
+            } catch (error) {
+                showToast('Logout failed', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ====================================================================
+        // TAB MANAGEMENT
+        // ====================================================================
+
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const tabBtns = document.querySelectorAll('.main-tab-btn');
+
+            tabs.forEach(tab => tab.classList.add('hidden'));
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            if (tabName === 'browse') {
+                searchNotes();
+            } else if (tabName === 'profile') {
+                loadProfile();
+            }
+        }
+
+        // ====================================================================
+        // NOTES MANAGEMENT
+        // ====================================================================
+
+        async function loadCategories() {
+            try {
+                const data = await apiCall('/api/notes/categories');
+                categories = data.categories;
+                
+                const select = document.getElementById('categoryFilter');
+                select.innerHTML = categories.map(cat => 
+                    `<option value="${cat}">${cat}</option>`
+                ).join('');
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        }
+
+        async function searchNotes() {
+            showLoading();
+            try {
+                const query = document.getElementById('searchQuery').value;
+                const category = document.getElementById('categoryFilter').value;
+                const sort = document.getElementById('sortBy').value;
+
+                const data = await apiCall(`/api/notes/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&sort=${sort}`);
+                
+                allNotes = data.notes;
+                displayNotes(data.notes);
+
+            } catch (error) {
+                showToast('Search failed: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayNotes(notes) {
+            const container = document.getElementById('searchResults');
+            
+            if (notes.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20">
+                        <div class="text-8xl mb-6">📭</div>
+                        <h3 class="text-2xl font-bold text-gray-700 mb-3">No notes found</h3>
+                        <p class="text-gray-500">Try different keywords or category filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const resultHeader = `
+                <div class="gradient-bg text-white px-8 py-6 rounded-2xl mb-6 fade-in">
+                    <h2 class="text-3xl font-bold mb-2">📚 Found ${notes.length} Note${notes.length !== 1 ? 's' : ''}</h2>
+                    <p class="opacity-90">Browse and download study materials shared by your peers</p>
+                </div>
+            `;
+
+            const notesHtml = notes.map(note => createNoteCard(note)).join('');
+            container.innerHTML = resultHeader + notesHtml;
+        }
+
+        function createNoteCard(note) {
+            const stars = '⭐'.repeat(Math.floor(note.avg_rating)) + '☆'.repeat(5 - Math.floor(note.avg_rating));
+            const tags = note.tags.map(tag => 
+                `<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">${tag}</span>`
+            ).join(' ');
+
+            return `
+                <div class="note-card bg-white rounded-2xl shadow-lg p-8 fade-in">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-3">${note.title}</h3>
+                            <p class="text-gray-600 mb-4 leading-relaxed">${note.description || 'No description available'}</p>
+                            <div class="flex flex-wrap gap-2 mb-4">${tags}</div>
+                        </div>
+                        <div class="text-right ml-6">
+                            <div class="gradient-bg text-white px-4 py-2 rounded-xl font-semibold mb-3">
+                                ${note.category}
+                            </div>
+                            <div class="text-purple-600 text-3xl font-bold">${note.avg_rating}/5</div>
+                            <div class="text-sm text-gray-500">${stars}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-5 mb-6">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                            <div>
+                                <div class="text-gray-500 mb-1">📚 Subject</div>
+                                <div class="font-semibold text-gray-800">${note.subject}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500 mb-1">👤 Uploader</div>
+                                <div class="font-semibold text-gray-800">${note.uploader_name}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500 mb-1">📅 Date</div>
+                                <div class="font-semibold text-gray-800">${note.upload_date.substring(0, 10)}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500 mb-1">⬇️ Downloads</div>
+                                <div class="font-semibold text-gray-800">${note.downloads}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500 mb-1">📄 Size</div>
+                                <div class="font-semibold text-gray-800">${formatFileSize(note.file_size)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-center">
+                        <button onclick="downloadNote(${note.id})" 
+                                class="gradient-bg text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all transform hover:scale-105">
+                            ⬇️ Download
+                        </button>
+                        <div class="bg-gray-100 px-4 py-3 rounded-xl">
+                            <span class="text-gray-600 text-sm font-semibold">ID: ${note.id}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function downloadNote(noteId) {
+            showLoading();
+            try {
+                window.location.href = `/api/notes/download/${noteId}`;
+                setTimeout(() => {
+                    showToast('Download started!', 'success');
+                    hideLoading();
+                    searchNotes(); // Refresh to update download count
+                }, 1000);
+            } catch (error) {
+                hideLoading();
+                showToast('Download failed: ' + error.message, 'error');
+            }
+        }
+
+        // ====================================================================
+        // UPLOAD
+        // ====================================================================
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            try {
+                const formData = new FormData();
+                formData.append('title', document.getElementById('uploadTitle').value);
+                formData.append('category', document.getElementById('uploadCategory').value);
+                formData.append('subject', document.getElementById('uploadSubject').value);
+                formData.append('description', document.getElementById('uploadDescription').value);
+                formData.append('tags', document.getElementById('uploadTags').value);
+                formData.append('file', document.getElementById('uploadFile').files[0]);
+
+                const response = await fetch('/api/notes/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error);
+                }
+
+                showToast(data.message, 'success');
+                
+                // Reset form
+                document.getElementById('uploadForm').reset();
+                
+                // Reload categories and switch to browse
+                await loadCategories();
+                switchTab('browse');
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // ====================================================================
+        // RATING
+        // ====================================================================
+
+        document.getElementById('ratingSlider').addEventListener('input', (e) => {
+            document.getElementById('ratingValue').textContent = e.target.value;
+        });
+
+        document.getElementById('ratingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            try {
+                const noteId = parseInt(document.getElementById('rateNoteId').value);
+                const rating = parseInt(document.getElementById('ratingSlider').value);
+                const review = document.getElementById('reviewText').value;
+
+                const data = await apiCall('/api/notes/rate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note_id: noteId, rating, review })
+                });
+
+                showToast(data.message, 'success');
+                
+                // Reset form
+                document.getElementById('rateNoteId').value = '';
+                document.getElementById('ratingSlider').value = 3;
+                document.getElementById('ratingValue').textContent = '3';
+                document.getElementById('reviewText').value = '';
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // ====================================================================
+        // PROFILE
+        // ====================================================================
+
+        async function loadProfile() {
+            showLoading();
+            try {
+                const data = await apiCall('/api/user/profile');
+                displayProfile(data.profile);
+            } catch (error) {
+                showToast('Failed to load profile', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayProfile(profile) {
+            const roleEmoji = {
+                'student': '🎓',
+                'teacher': '👨‍🏫',
+                'admin': '⚡'
+            };
+
+            const roleColor = {
+                'student': '#667eea',
+                'teacher': '#48bb78',
+                'admin': '#f56565'
+            };
+
+            const emoji = roleEmoji[profile.role] || '👤';
+            const color = roleColor[profile.role] || '#667eea';
+
+            const html = `
+                <div class="gradient-bg text-white rounded-2xl p-10 mb-8 fade-in">
+                    <div class="flex items-center gap-6 mb-8">
+                        <div class="bg-white w-24 h-24 rounded-full flex items-center justify-center text-5xl shadow-xl">
+                            ${emoji}
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-4xl font-bold mb-2">${profile.username}</h2>
+                            <p class="text-lg opacity-95 mb-1">📧 ${profile.email}</p>
+                            <p class="opacity-85">📅 Member since ${profile.member_since}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-2xl p-8 text-center fade-in">
+                        <div class="text-5xl mb-4">📤</div>
+                        <div class="text-4xl font-bold text-purple-600 mb-2">${profile.total_uploads}</div>
+                        <div class="text-gray-700 font-semibold">Notes Uploaded</div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-8 text-center fade-in">
+                        <div class="text-5xl mb-4">⬇️</div>
+                        <div class="text-4xl font-bold text-green-600 mb-2">${profile.total_downloads_of_uploads}</div>
+                        <div class="text-gray-700 font-semibold">Downloads Received</div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-8 text-center fade-in">
+                        <div class="text-5xl mb-4">📥</div>
+                        <div class="text-4xl font-bold text-red-600 mb-2">${profile.personal_downloads}</div>
+                        <div class="text-gray-700 font-semibold">Notes Downloaded</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('profileContent').innerHTML = html;
+        }
+
+        // ====================================================================
+        // DELETE NOTE
+        // ====================================================================
+
+        document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const noteId = parseInt(document.getElementById('deleteNoteId').value);
+
+                const data = await apiCall(`/api/notes/delete/${noteId}`, {
+                    method: 'DELETE'
+                });
+
+                showToast(data.message, 'success');
+                document.getElementById('deleteNoteId').value = '';
+                
+                // Refresh categories and notes
+                await loadCategories();
+                switchTab('browse');
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // ====================================================================
+        // INITIALIZATION
+        // ====================================================================
+
+        async function checkAuthStatus() {
+            try {
+                const data = await apiCall('/api/auth/status');
+                
+                if (data.authenticated) {
+                    currentUser = data.user;
+                    document.getElementById('currentUsername').textContent = data.user.username;
+                    document.getElementById('currentRole').textContent = `Role: ${data.user.role}`;
+                    
+                    document.getElementById('authSection').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    
+                    await loadCategories();
+                    await searchNotes();
+                }
+            } catch (error) {
+                console.log('Not authenticated');
+            }
+        }
+
+        // Check auth status on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+        });
+
+        // Enable search on Enter key
+        document.getElementById('searchQuery').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchNotes();
+            }
+        });
+
+    </script>
+
+</body>
+</html>
