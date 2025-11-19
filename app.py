@@ -46,157 +46,177 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
-    # Users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            email TEXT NOT NULL,
-            role TEXT DEFAULT 'student',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    try:
+        # Users table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                email TEXT NOT NULL,
+                role TEXT DEFAULT 'student',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    # Notes table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS notes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            category TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            description TEXT,
-            uploader_id INTEGER NOT NULL,
-            upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            downloads INTEGER DEFAULT 0,
-            tags TEXT,
-            file_path TEXT NOT NULL,
-            file_name TEXT NOT NULL,
-            file_size INTEGER,
-            rating_sum INTEGER DEFAULT 0,
-            rating_count INTEGER DEFAULT 0,
-            FOREIGN KEY (uploader_id) REFERENCES users(id)
-        )
-    """)
+        # Notes table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                category TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                description TEXT,
+                uploader_id INTEGER NOT NULL,
+                upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                downloads INTEGER DEFAULT 0,
+                tags TEXT,
+                file_path TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                file_size INTEGER,
+                rating_sum INTEGER DEFAULT 0,
+                rating_count INTEGER DEFAULT 0,
+                FOREIGN KEY (uploader_id) REFERENCES users(id)
+            )
+        """)
 
-    # Download history
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS download_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            note_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (note_id) REFERENCES notes(id),
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
+        # Download history
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS download_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                note_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (note_id) REFERENCES notes(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
 
-    # Ratings table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS ratings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            note_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
-            review TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(note_id, user_id),
-            FOREIGN KEY (note_id) REFERENCES notes(id),
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
+        # Ratings table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS ratings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                note_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+                review TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(note_id, user_id),
+                FOREIGN KEY (note_id) REFERENCES notes(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
 
-    conn.commit()
+        conn.commit()
 
-    # Create demo data if database is empty
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        create_demo_data(conn)
-
-    conn.close()
+        # Create demo data if database is empty
+        cursor.execute("SELECT COUNT(*) FROM users")
+        if cursor.fetchone()[0] == 0:
+            create_demo_data(conn)
+        
+        conn.close()
+        print("✅ Database initialized successfully")
+        
+    except Exception as e:
+        conn.close()
+        print(f"❌ Database initialization error: {str(e)}")
+        raise
 
 def create_demo_data(conn):
     """Create demo users and sample notes"""
     cursor = conn.cursor()
 
-    # Demo users
-    demo_users = [
-        ("admin", "admin123", "admin@university.edu", "admin"),
-        ("student1", "pass123", "student1@university.edu", "student"),
-        ("professor", "prof123", "professor@university.edu", "teacher")
-    ]
+    try:
+        # Demo users
+        demo_users = [
+            ("admin", "admin123", "admin@university.edu", "admin"),
+            ("student1", "pass123", "student1@university.edu", "student"),
+            ("professor", "prof123", "professor@university.edu", "teacher")
+        ]
 
-    for username, password, email, role in demo_users:
-        cursor.execute("""
-            INSERT INTO users (username, password, email, role)
-            VALUES (?, ?, ?, ?)
-        """, (username, generate_password_hash(password), email, role))
+        for username, password, email, role in demo_users:
+            try:
+                cursor.execute("""
+                    INSERT INTO users (username, password, email, role)
+                    VALUES (?, ?, ?, ?)
+                """, (username, generate_password_hash(password), email, role))
+            except sqlite3.IntegrityError:
+                # User already exists, skip
+                pass
 
-    # Sample notes
-    sample_notes = [
-        {
-            "title": "Introduction to Python Programming",
-            "category": "Computer Science",
-            "subject": "Programming",
-            "description": "Comprehensive guide covering Python basics, data structures, OOP, and best practices",
-            "uploader_id": 1,
-            "tags": json.dumps(["python", "programming", "basics", "oop"]),
-            "file_name": "intro_python.pdf"
-        },
-        {
-            "title": "Calculus I - Derivatives and Integrals",
-            "category": "Mathematics",
-            "subject": "Calculus",
-            "description": "Complete notes on differential and integral calculus with solved examples",
-            "uploader_id": 2,
-            "tags": json.dumps(["calculus", "derivatives", "integrals"]),
-            "file_name": "calculus_notes.pdf"
-        },
-        {
-            "title": "Database Management Systems",
-            "category": "Computer Science",
-            "subject": "Databases",
-            "description": "SQL, normalization, transactions, and database design patterns",
-            "uploader_id": 1,
-            "tags": json.dumps(["database", "sql", "dbms"]),
-            "file_name": "dbms_notes.pdf"
-        },
-        {
-            "title": "Organic Chemistry Reactions",
-            "category": "Chemistry",
-            "subject": "Organic Chemistry",
-            "description": "Common organic reactions and mechanisms",
-            "uploader_id": 3,
-            "tags": json.dumps(["chemistry", "organic", "reactions"]),
-            "file_name": "organic_chem.pdf"
-        },
-        {
-            "title": "Data Structures and Algorithms",
-            "category": "Computer Science",
-            "subject": "DSA",
-            "description": "Comprehensive coverage of DSA concepts",
-            "uploader_id": 2,
-            "tags": json.dumps(["dsa", "algorithms", "programming"]),
-            "file_name": "dsa_notes.pdf"
-        }
-    ]
+        # Sample notes
+        sample_notes = [
+            {
+                "title": "Introduction to Python Programming",
+                "category": "Computer Science",
+                "subject": "Programming",
+                "description": "Comprehensive guide covering Python basics, data structures, OOP, and best practices",
+                "uploader_id": 1,
+                "tags": json.dumps(["python", "programming", "basics", "oop"]),
+                "file_name": "intro_python.pdf"
+            },
+            {
+                "title": "Calculus I - Derivatives and Integrals",
+                "category": "Mathematics",
+                "subject": "Calculus",
+                "description": "Complete notes on differential and integral calculus with solved examples",
+                "uploader_id": 2,
+                "tags": json.dumps(["calculus", "derivatives", "integrals"]),
+                "file_name": "calculus_notes.pdf"
+            },
+            {
+                "title": "Database Management Systems",
+                "category": "Computer Science",
+                "subject": "Databases",
+                "description": "SQL, normalization, transactions, and database design patterns",
+                "uploader_id": 1,
+                "tags": json.dumps(["database", "sql", "dbms"]),
+                "file_name": "dbms_notes.pdf"
+            },
+            {
+                "title": "Organic Chemistry Reactions",
+                "category": "Chemistry",
+                "subject": "Organic Chemistry",
+                "description": "Common organic reactions and mechanisms",
+                "uploader_id": 3,
+                "tags": json.dumps(["chemistry", "organic", "reactions"]),
+                "file_name": "organic_chem.pdf"
+            },
+            {
+                "title": "Data Structures and Algorithms",
+                "category": "Computer Science",
+                "subject": "DSA",
+                "description": "Comprehensive coverage of DSA concepts",
+                "uploader_id": 2,
+                "tags": json.dumps(["dsa", "algorithms", "programming"]),
+                "file_name": "dsa_notes.pdf"
+            }
+        ]
 
-    for note in sample_notes:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], note["file_name"])
-        with open(file_path, "w") as f:
-            f.write(f"Sample content for {note['title']}\n")
-            f.write("Demo file for CloudNotes Pro\n")
+        for note in sample_notes:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], note["file_name"])
+            
+            # Create file only if it doesn't exist
+            if not os.path.exists(file_path):
+                with open(file_path, "w") as f:
+                    f.write(f"Sample content for {note['title']}\n")
+                    f.write("Demo file for CloudNotes Pro\n")
 
-        file_size = os.path.getsize(file_path)
+            file_size = os.path.getsize(file_path)
 
-        cursor.execute("""
-            INSERT INTO notes (title, category, subject, description, uploader_id,
-                             tags, file_path, file_name, file_size)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (note["title"], note["category"], note["subject"], note["description"],
-              note["uploader_id"], note["tags"], file_path, note["file_name"], file_size))
+            cursor.execute("""
+                INSERT INTO notes (title, category, subject, description, uploader_id,
+                                 tags, file_path, file_name, file_size)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (note["title"], note["category"], note["subject"], note["description"],
+                  note["uploader_id"], note["tags"], file_path, note["file_name"], file_size))
 
-    conn.commit()
+        conn.commit()
+        print("✅ Demo data created successfully")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"⚠️ Demo data creation warning: {str(e)}")
 
 # ============================================================================
 # AUTHENTICATION DECORATORS
@@ -327,6 +347,45 @@ def auth_status():
             }
         })
     return jsonify({'authenticated': False})
+
+@app.route('/api/system/init', methods=['POST'])
+def reinitialize_database():
+    """Reinitialize database (for development/troubleshooting)"""
+    try:
+        init_db()
+        return jsonify({
+            'success': True,
+            'message': 'Database reinitialized successfully'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to initialize database: {str(e)}'
+        }), 500
+
+@app.route('/api/system/health')
+def health_check():
+    """Health check endpoint"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        user_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM notes")
+        note_count = cursor.fetchone()[0]
+        conn.close()
+        
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'users': user_count,
+            'notes': note_count
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 500
 
 # ============================================================================
 # ROUTES - NOTES
@@ -639,9 +698,36 @@ def server_error(e):
 # APPLICATION INITIALIZATION
 # ============================================================================
 
-if __name__ == '__main__':
-    with app.app_context():
+# Initialize database on startup
+def initialize_app():
+    """Initialize application on startup"""
+    try:
+        # Ensure upload directory exists
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # Initialize database
         init_db()
+        
+        print("=" * 60)
+        print("✅ CloudNotes Pro - Application Started Successfully")
+        print("=" * 60)
+        print(f"📁 Upload folder: {app.config['UPLOAD_FOLDER']}")
+        print(f"💾 Database: {app.config['DATABASE']}")
+        print(f"🔐 Secret key configured: {'Yes' if app.config['SECRET_KEY'] else 'No'}")
+        print("=" * 60)
+        
+    except Exception as e:
+        print(f"❌ Application initialization failed: {str(e)}")
+        raise
+
+if __name__ == '__main__':
+    initialize_app()
     
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    debug = os.environ.get('FLASK_ENV', 'production') == 'development'
+    
+    print(f"🚀 Starting server on http://0.0.0.0:{port}")
+    print(f"🔧 Debug mode: {debug}")
+    print("=" * 60)
+    
+    app.run(host='0.0.0.0', port=port, debug=debug)
